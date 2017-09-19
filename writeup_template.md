@@ -30,14 +30,34 @@ Here I will consider the rubric points individually and describe how I addressed
 ---
 ### Writeup / README
 
+#### Files included in the submission
+
+1. `output_[123].yaml` files are located in `/output_files/yaml_files/`
+2. `project_template.py` - main code for the project is in `pr2_robot/scripts/`
+3. `capture_features.py` - code to train the model is in `pr2_robot/scripts/`
+4. `model.tar.gz` - actual model file (need to extract the .tar.gz to get .sav) used for prediction is in `pr2_robot/scripts/`
+5. `output_3_rviz_screenshot_2017_09_12-20_28_55.png` - screenshot of 100% of objects recognized in world 3 is in `output_files/images`
+
+
+[//]: # (Image References)
+
+[world1]: ./output_files/images/output_1_rviz_screenshot_2017_09_12-20_46_51.png
+[world2]: ./output_files/images/output_2_rviz_screenshot_2017_09_12-20_22_58.png
+[world3]: ./output_files/images/output_3_rviz_screenshot_2017_09_12-20_28_55.png
+[world3_bad1]: ./output_files/images/output3_bad_rviz_screenshot_2017_09_12-20_34_03.png
+[world3_bad2]: ./output_files/images/output3_bad2_rviz_screenshot_2017_09_12-20_35_02.png
+[world3_train]: ./output_files/saved_models/model3/figure_2.png
+[exe2]: ./output_files/images/Screenshot_from_2017-08-17_18-59-45.png
+
+
 #### 1. Provide a Writeup / README that includes all the rubric points and how you addressed each one.  You can submit your writeup as markdown or pdf.
 
 You're reading it!
 
 #### Exercise 1, 2 and 3 pipeline implemented
 
-The exercises 1, 2, and 3 provide a good understanding of the concepts requred
-to complete thid project. Below, I talk about the implementation of the exercises.
+The exercises 1, 2, and 3 provide a good understanding of the concepts required
+to complete this project. Below, I talk about the implementation of the exercises.
 I mostly used the code provided in the lessons. I will mention the places where
 some modifications were made.
 
@@ -88,7 +108,7 @@ step has its own unique color.
 **Steps to  complete Exercise 2**
 
 - create a ros publisher that publishes to the topic "/pcl_objects".
-create this in the main method.
+  create this in the main method.
 
 ```python
 pcl_objects_pub = rospy.Publisher("/pcl_objects", PointCloud2, queue_size=1)
@@ -169,19 +189,17 @@ detected_objects.append(do)
 detected_objects_pub.publish(detected_objects)
 ```
 
+**Screenshot below shows the output of Exercise 2 where the objects are in
+colored clusters**
 
-Here is an example of how to include an image in your writeup.
+![alt text][exe2]
 
-![demo-1](https://user-images.githubusercontent.com/20687560/28748231-46b5b912-7467-11e7-8778-3095172b7b19.png)
-
-And here's another image!
-![demo-2](https://user-images.githubusercontent.com/20687560/28748286-9f65680e-7468-11e7-83dc-f1a32380b89c.png)
 
 ### Pick and Place Setup
 
 The goal of the project is similar to that of Exercise 3. We need to recognize
 all the objects in the world and label them. One extra step is to write a .yaml
-file with group and location infornation. Also there are 3 different worlds
+file with group and location information. Also there are 3 different worlds
 with different objects in each world.
 
 Following points summerize the goals for the project.
@@ -237,7 +255,45 @@ pick_pose = get_pose(*centroid)
   `.yaml` file.
 
 
+#### Results
+
+Below are the screenshots of all pass and fail cases. I couldn't make it fail
+on any objects on worlds 1 and 2. In world 3, I could make it fail on 2 at
+most. Although, it was very hard to capture a screenshot because the
+miss-classified label would only flash for a sec and it will turn back to the
+correct result. So, I saw no consistent miss-classification of any objects in any
+world.
+
+**All objects in World 1 were identified correctly**
+
+![alt text][world1]
+
+**All objects in World 2 were identified correctly**
+
+![alt text][world2]
+
+**All objects in World 3 were identified correctly**
+
+![alt text][world3]
+
+**All but 1 objects in World 3 were identified correctly**
+
+![alt text][world3_bad1]
+
+**All but 2 objects in World 3 were identified correctly**
+
+![alt text][world3_bad2]
+
+
 #### Improvements
+
+Observing the accuracy below, it is not a surprise that we are getting an
+occasional miss-classification in world 3. This section talks about how we can
+improve this accuracy to get solid predictions.
+
+**Output of test accuracy, measured after the training.**
+
+![alt text][world3_train]
 
 - An obvious improvement for the project is to incrase the accuracy of the
   object recognition. This can be done by increasing the size of the feature
