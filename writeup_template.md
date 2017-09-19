@@ -62,57 +62,112 @@ filter_axis='z', axis_min=0.6, axis_max=1.1
 filter_axis='y', axis_min=-2.5, axis_max=-1.4
 ```
 
-- Perform RANSAC plane fitting to identify the table and Use the ExtractIndices Filter to create new point clouds containing the table and objects separately.
-
+- Perform RANSAC plane fitting to identify the table and Use the ExtractIndices
+Filter to create new point clouds containing the table and objects separately.
+Code for RANSAC plane fitting is implemented in the function
+`ransac_plane_segmentor(cloud, max_distance=0.01):`. Parameter to use in this
+function is `max_distance=0.01`. This function separates the point cloud into
+an objects cloud and a table cloud.
 
 
 #### 2. Complete Exercise 2 steps: Pipeline including clustering for segmentation implemented.
 
+**This exercise has following top level goals:**
 
-Create publishers and topics to publish the segmented table and tabletop
+- Create publishers and topics to publish the segmented table and tabletop
 objects as separate point clouds
 
-Apply Euclidean clustering on the table-top objects (after table segmentation
+- Apply Euclidean clustering on the table-top objects (after table segmentation
 is successful)
 
-Create a XYZRGB point cloud such that each cluster obtained from the previous
+- Create a XYZRGB point cloud such that each cluster obtained from the previous
 step has its own unique color.
 
-Finally publish your colored cluster cloud on a separate topic
+- Finally publish your colored cluster cloud on a separate topic
+
+**Steps to  complete Exercise 2**
+
+- create a ros publisher that publishes to the topic "/pcl_objects".
+create this in the main method.
+
+```python
+pcl_objects_pub = rospy.Publisher("/pcl_objects", PointCloud2, queue_size=1)
+```
+
+- convert pcl cloud data to ros message. data needs to be in the ros message
+  format to publish.
+
+```python
+ros_cloud_objects = pcl_to_ros(cloud_objects)
+```
+
+- publish the ros message.
+
+```python
+pcl_objects_pub.publish(ros_cloud_objects)
+```
+
+- Statistical Outlier Filtering. This code is implemented in the
+  `statistical_outlier_filter(cloud, k=50, x=1.0)` function.
+
+- Euclidean Clustering. Create Cluster-Mask Point Cloud to visualize each
+  cluster separately. `get_colorful_euclidean_clusters` function has the code
+  to perform Euclidean Clustering. Parameters used are
+
+```python
+tolerance=0.012, min_size=50, max_size=50000
+```
+
+- Publish the colored point clusters. If everything works, points from each
+  object will belong to a cluster and will be in a unique color.
+
+```python
+ros_cluster_cloud = pcl_to_ros(cluster_cloud)
+pcl_cluster_pub.publish(ros_cluster_cloud)
+```
 
 
+#### 3. Complete Exercise 3 Steps.  Features extracted and SVM trained.  Object recognition implemented.
 
+The goal of this section is to identify the object in each of the colored point
+clusters.
 
+**Steps to  complete Exercise 2**
 
-- Convert ROS msg to PCL data
-- Statistical Outlier Filtering
-- Voxel Grid Downsampling
-- PassThrough Filter
-- RANSAC Plane Segmentation
-- Extract inliers and outliers
-- Euclidean Clustering
-- Create Cluster-Mask Point Cloud to visualize each #       cluster separately
-- Convert PCL data to ROS messages
-- Publish ROS messages
+- loop through each detected cluster one at a time. the variable
+  `cluster_indices` contains a list of point lists. we go through each point
+  list and identify the object in it.
 
+- Compute the associated feature vector. compute color histograms and normal
+  histograms and join them to get the complete feature vector.
 
+```python
+chists = compute_color_histograms(ros_cluster, using_hsv=True)
+normals = get_normals(ros_cluster)
+nhists = compute_normal_histograms(normals)
+feature = np.concatenate((chists, nhists))
+```
 
-#### 2. Complete Exercise 3 Steps.  Features extracted and SVM trained.  Object recognition implemented.
+- Make the prediction, retrieve the label for the result, and add it to
+  detected_objects_labels list.
 
+```python
+prediction = clf.predict(scaler.transform(feature.reshape(1,-1)))
+label = encoder.inverse_transform(prediction)[0]
+detected_objects_labels.append(label)
+```
 
-- loop through each detected cluster one at a time
-- Grab the points for the cluster
-- convert the cluster from pcl to ROS using helper function
-- ros_cluster is of type PointCloud2
-- Compute the associated feature vector
-- Extract histogram features
-- Make the prediction
-- retrieve the label for the result
-- and add it to detected_objects_labels list
-- Publish a label into RViz
 - Add the detected object to the list of detected objects.
-- Publish the list of detected objects
 
+```python
+detected_objects.append(do)
+```
+
+- At the end of the loop, publish the list of detected objects.
+
+```python
+detected_objects_pub.publish(detected_objects)
+```
 
 
 Here is an example of how to include an image in your writeup.
