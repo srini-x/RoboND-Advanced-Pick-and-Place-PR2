@@ -174,14 +174,73 @@ Here is an example of how to include an image in your writeup.
 
 ![demo-1](https://user-images.githubusercontent.com/20687560/28748231-46b5b912-7467-11e7-8778-3095172b7b19.png)
 
-### Pick and Place Setup
-
-#### 1. For all three tabletop setups (`test*.world`), perform object recognition, then read in respective pick list (`pick_list_*.yaml`). Next construct the messages that would comprise a valid `PickPlace` request output them to `.yaml` format.
-
 And here's another image!
 ![demo-2](https://user-images.githubusercontent.com/20687560/28748286-9f65680e-7468-11e7-83dc-f1a32380b89c.png)
 
-Spend some time at the end to discuss your code, what techniques you used, what worked and why, where the implementation might fail and how you might improve it if you were going to pursue this project further.
+### Pick and Place Setup
+
+The goal of the project is similar to that of Exercise 3. We need to recognize
+all the objects in the world and label them. One extra step is to write a .yaml
+file with group and location infornation. Also there are 3 different worlds
+with different objects in each world.
+
+Following points summerize the goals for the project.
+
+1. For all three tabletop setups (`test*.world`), perform object recognition
+2. read in respective pick list (`pick_list_*.yaml`).
+3. construct the messages that would comprise a valid `PickPlace` request output them to `.yaml` format.
+
+#### Steps to complete the project
+
+Two major things to solve in this project are:
+
+1. Generate a good `model.sav` using the `capture_features.py`.
+
+I made following changes to the `capture_features.py`:
+
+- modify the `models` variable to match all the objects in the 3rd world.
+  Because the world 3 has all the objects from the other worlds, a model
+  trained on world 3 will work on all worlds. I increased the number of samples
+  to `1000` and number of attempts to `10`. `500` and `5` for number
+  of samples and attempts produced similar accuracy results.
+
+2. create the `.yaml` file.
+
+The code for this step is in the `pr2_mover(object_list)` method.
+
+- get the label from the identified object. Use the label as the key to obtain
+  the `object_group` which again can be used as a key to obtain the corresponding `dropbox_name`
+  and `dropbox_pos`.
+
+```python
+object_group = object_param_dict[object_.label]
+dropbox_name, dropbox_pos = dropbox_param_dict[object_group]
+```
+
+- An array of point cloud data corresponding to the object can be obtained and
+  computing a mean of those points will give us the `centroid` of the object.
+
+```python
+pcl_array = ros_to_pcl(object_.cloud).to_array()
+centroid = np.mean(pcl_array, axis=0)[:3]
+pick_pose = get_pose(*centroid)
+```
+
+- I created a function `get_pose()` to create a `Pose`. Used this to create
+  `pick_pose` and `place_pose`.
+
+- After obtaining all the required information, `make_yaml_dict` method can be
+  used to create a yaml dictionary. A yaml dict for each object is added to
+  a list.
+
+- Using the function `send_to_yaml` the list of yaml dicts can be written to a
+  `.yaml` file.
 
 
+#### Improvements
+
+- An obvious improvement for the project is to incrase the accuracy of the
+  object recognition. This can be done by increasing the size of the feature
+  vector. Right now, the feature vector only combines the `hsv` colorspace and
+  the norm vectors. Adding `ypbpr` space can improve the prediction accuracy.
 
